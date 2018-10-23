@@ -13,5 +13,6 @@ var index = (function () {
     pageSize: 6,
     fixingListsTabIndex: 0
   }
-  Event.create('fixing').trigger('index', null, null, params, {})
+  Event.create('fixing').trigger('GetTestFixingListForSearch', null, null, params, { query: '' })
+  // Event.create('fixing').trigger('index', null, null, params, {})
 })()
