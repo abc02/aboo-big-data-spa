@@ -43,7 +43,7 @@ var fixingSearch = (function ($el) {
   return {
     refresh(map, source, params, fixing) {
       $el.off('click').on('click', 'button', function (e) {
-        fixing.query = $el.find('nav-search').val()
+        fixing.query = $el.find('.nav-search').val()
         Event.create('fixing').trigger('GetTestFixingListForSearch', map, source, params, fixing)
       })
     }
@@ -58,14 +58,17 @@ var GetTestFixingListForSearch = (function ($el) {
   return {
     refresh(map, source, params, fixing) {
       let userInfo = utils.GetLoaclStorageUserInfo('userinfo')
+      console.log(fixing)
       FIXING_TEST_API.GetTestFixingListForSearch({ adminId: userInfo.AdminId, query: fixing.query }).then(res => {
         if (res.data.ret === 1001) {
-          Event.create('fixing').trigger('index', map, res.data.data, params)
-          Event.create('fixing').trigger('init', map, res.data.data, params)
+          Event.create('fixing').trigger('index', map, res.data.data, params, fixing)
+          Event.create('fixing').trigger('init', map, res.data.data, params, fixing)
         }
         if (res.data.ret === 1002) {
           $('#no-data-ModalCenter').find('.no-data-container').text(res.data.code)
           $('#no-data-ModalCenter').modal('show')
+          Event.create('fixing').trigger('index', map, [], params, fixing)
+          $('.fixing-container > tbody').empty()
         }
 
       })
@@ -157,12 +160,12 @@ var BatchAddTestFixing = (function ($el) {
 })($('.update-file'))
 
 var fixingListsTab = (function ($el) {
-  Event.create('fixing').listen('init', function (map, source, params) {
-    fixingListsTab.refresh(map, source, params)
+  Event.create('fixing').listen('init', function (map, source, params, fixing) {
+    fixingListsTab.refresh(map, source, params, fixing)
 
   })
   return {
-    refresh(map, source, params) {
+    refresh(map, source, params, fixing) {
       $el.off('click').on('click', 'li', e => {
         $(e.currentTarget)
           .find('p:first-of-type')
@@ -174,7 +177,7 @@ var fixingListsTab = (function ($el) {
           .removeClass('text-white')
           .addClass('text-muted')
         params.fixingListsTabIndex = $(e.currentTarget).index()
-        Event.create('fixing').trigger('index', map, source, params)
+        Event.create('fixing').trigger('index', map, source, params, fixing)
       })
         .find('li')
         .eq(params.fixingListsTabIndex)
