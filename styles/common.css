@@ -633,3 +633,25 @@
   background-color: #141831;
   color: white !important;
 }
+
+
+.table .tbody {
+  display:block;
+  height: 230px;
+  /* overflow-y:scroll; */
+  -webkit-overflow-scrolling: touch; /*为了滚动顺畅  */
+}
+.table .tbody::-webkit-scrollbar {
+  /*隐藏滚动条*/
+  display: none; 
+}
+.table .tbody::-moz-scrollbar {
+  /*隐藏滚动条*/
+  display: none;
+}
+
+.table .thead, .tbody tr {
+  display:table;
+  width:100%;
+  table-layout:fixed;
+}

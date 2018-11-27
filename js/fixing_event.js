@@ -245,7 +245,7 @@ var fixingLists = (function ($el) {
                 <td class="pt-4 pb-4">${utils.handleTimestampToDateTime(item.latest_location.loc_time)}</td>
                 <td class="pt-4 pb-4">${item.entity_desc}</td>
                 <td class="pt-4 pb-4">
-                <button type="button" class="btn btn-primary border-radius-small" onclick="Event.create('fixing').trigger('AdminGetInstructionsList', null, { entity_name: ${item.entity_name}}, { type: 'init', currentTime: new Date() })">
+                <button type="button" class="btn btn-primary border-radius-small" onclick="Event.create('fixing').trigger('instructionsDialog', null, { entity_name: ${item.entity_name}}, { type: 'init', currentTime: utils.handleTimestampToDate(new Date()) })">
                   <img src="/assets/contro_instruction.png" width="13" height="20" />
                   指令
                 </button></td>
@@ -298,59 +298,218 @@ var fixingListsPagination = (function ($el) {
 
 
 // 鞋垫指令
-var fixingInstructions = (function ($el) {
-  Event.create('fixing').listen('AdminGetInstructionsList', function (map, item, fixing) {
-    fixingInstructions.refresh(map, item, fixing)
+// var fixingInstructions = (function ($el) {
+//   Event.create('fixing').listen('AdminGetInstructionsList', function (map, item, fixing) {
+//     fixingInstructions.refresh(map, item, fixing)
+//   })
+
+//   return {
+//     refresh(map, item, fixing) {
+
+//       if (fixing.type === 'init') {
+//         fixing.currentTime = utils.handleTimestampToDate(fixing.currentTime)
+//         $el.find('.instructions-datepicker').datepicker('update', fixing.currentTime);
+//       }
+
+//       // loacl 获取数据
+//       userInfo = utils.GetLoaclStorageUserInfo('userinfo')
+//       FIXING_API.AdminGetInstructions({ adminId: userInfo.AdminId, fixingId: item.entity_name, time: fixing.currentTime }).then(res => {
+//         if (res.data.ret == 1001) {
+//           let instructionsContent = res.data.data.reverse().map(item => {
+//             return `<tr class="">
+//                 <td class="border">${item.shijian}</td>
+//                 <td class="border text-center">${item.leixing}</td>
+//                 <td class="border breakAll">${item.content}</td>
+//               </tr>`
+//           }).join('')
+//           $el.find('.instructions-container > .instructions-table > tbody').html(instructionsContent)
+//           $el.modal('show')
+//         }
+//         if (res.data.ret === 1002) {
+//           $el.find('.instructions-container').text(res.data.code)
+//           $el.modal('show')
+//         }
+//       })
+//     }
+//   }
+// })($('#instructions-list-ModalCenter'))
+
+
+// 指令日期选择器
+// var fixingInstructionsDatepicker = (function ($el) {
+//   Event.create('fixing').listen('AdminGetInstructionsList', function (map, item, fixing) {
+//     fixingInstructionsDatepicker.refresh(map, item, fixing)
+//   })
+
+//   return {
+//     refresh(map, item, fixing) {
+//       $el.off('changeDate').one('changeDate', function (e) {
+//         fixing.currentTime = utils.handleTimestampToDate($el.datepicker('getDate'))
+//         $el.datepicker('update', fixing.currentTime)
+//         fixing.type = 'update'
+//         Event.create('fixing').trigger('AdminGetInstructionsList', map, item, fixing)
+//       })
+//     }
+//   }
+// })($('.instructions-datepicker'))
+
+// instructions-list-20181126-ModalCenter
+var instructionsDialog = (function ($el) {
+  Event.create('fixing').listen('instructionsDialog', function (map, item, fixing) {
+    instructionsDialog.refresh(map, item, fixing)
   })
 
   return {
     refresh(map, item, fixing) {
+      Event.create('fixing').trigger('AdminGetInstructionsList', map, item, fixing)
+      Event.create('fixing').trigger('AdminGetInstructions', map, item, fixing)
+    }
+  }
+})()
 
+var AdminGetInstructions = (function($el) {
+  Event.create('fixing').listen('AdminGetInstructions', function (map, item, fixing) {
+    AdminGetInstructions.refresh(map, item, fixing)
+  })
+  
+  return {
+    refresh(map, item, fixing) {
+      // let titleHHTML = map.getInfoWindow().getTitle(),
+      //   titleNode = document.createRange().createContextualFragment(titleHHTML)
+      // fixing.fixingId = titleNode.textContent
       if (fixing.type === 'init') {
-        fixing.currentTime = utils.handleTimestampToDate(fixing.currentTime)
-        $el.find('.instructions-datepicker').datepicker('update', fixing.currentTime);
+        let currentTime = $el.find('.instructions-datepicker').attr('value')
+        console.log(currentTime)
+        if (currentTime) fixing.currentTime = currentTime
       }
-
+      console.log(fixing)
       // loacl 获取数据
-      userInfo = utils.GetLoaclStorageUserInfo('userinfo')
+      $el.find('.instructions-datepicker').datepicker('update', fixing.currentTime)
+      let userInfo = utils.GetLoaclStorageUserInfo('userinfo')
       FIXING_API.AdminGetInstructions({ adminId: userInfo.AdminId, fixingId: item.entity_name, time: fixing.currentTime }).then(res => {
-        if (res.data.ret == 1001) {
+        if (res.data.ret === 1001) {
+          // 1 设备 2 平台
           let instructionsContent = res.data.data.reverse().map(item => {
-            return `<tr class="">
-                <td class="border">${item.shijian}</td>
-                <td class="border text-center">${item.leixing}</td>
-                <td class="border breakAll">${item.content}</td>
-              </tr>`
-          }).join('')
-          $el.find('.instructions-container > .instructions-table > tbody').html(instructionsContent)
+            let leixingText = item.leixing === '1' ? '设备' : '平台'
+            return $(`<tr class="">
+                <td class="" width="120">${item.shijian}</td>
+                <td class="" width="100">${leixingText}</td>
+                <td class="breakAll">${item.content}</td>
+              </tr>`)
+          })
+          $el.find('#AdminGetInstructions .tbody').mCustomScrollbar()
+          .find('.mCustomScrollBox > .mCSB_container').empty().append(instructionsContent)
+          $el.find('#AdminGetInstructions .tbody').mCustomScrollbar('scrollTo', 'top')
           $el.modal('show')
         }
         if (res.data.ret === 1002) {
-          $el.find('.instructions-container').text(res.data.code)
+          $el.find('#AdminGetInstructions  .tbody').mCustomScrollbar()
+          .find('.mCustomScrollBox > .mCSB_container').empty().append(`<tr>
+            <td colspan="3" class="text-center pt-2 pb-2">${res.data.code}</td>
+          </tr>`)
           $el.modal('show')
         }
       })
     }
   }
-})($('#instructions-list-ModalCenter'))
+
+})($('#instructions-list-20181126-ModalCenter'))
+
+
+var AdminGetInstructionsList = (function($el) {
+  Event.create('fixing').listen('AdminGetInstructionsList', function (map, fixing) {
+    AdminGetInstructionsList.refresh(map, fixing)
+  })
+  
+  return {
+    refresh(map, fixing) {
+      let userInfo = utils.GetLoaclStorageUserInfo('userinfo')
+      FIXING_API.AdminGetInstructionsList({ adminId: userInfo.AdminId }).then(res => {
+        if (res.data.ret === 1001) {
+          let instructionsContent = res.data.data.map((item, index) => {
+            return $(`<tr class="" data-id="${item.Id}" data-instructions="${item.Instructions}" data-type="${item.type}">
+                <td class="pl-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="exampleRadios" id="exampleRadios${item.Id}" value="${item.Instructions}">
+                  <label class="form-check-label" for="exampleRadios${item.Id}">
+                    ${item.Content}
+                  </label>
+                </div>
+              </td>
+              </tr>`)
+          })
+          $el.find('#AdminGetInstructionsList .tbody').mCustomScrollbar()
+          .find('.mCustomScrollBox > .mCSB_container').empty().append(instructionsContent)
+        }
+        if (res.data.ret === 1002) {
+        
+        }
+      })
+    }
+  }
+
+})($('#instructions-list-20181126-ModalCenter'))
 
 
 // 指令日期选择器
 var fixingInstructionsDatepicker = (function ($el) {
-  Event.create('fixing').listen('AdminGetInstructionsList', function (map, item, fixing) {
+  Event.create('fixing').listen('instructionsDialog', function (map, item, fixing) {
     fixingInstructionsDatepicker.refresh(map, item, fixing)
   })
 
   return {
     refresh(map, item, fixing) {
-      $el.off('changeDate').one('changeDate', function (e) {
+      $el.off('changeDate').on('changeDate', function (e) {
         fixing.currentTime = utils.handleTimestampToDate($el.datepicker('getDate'))
-        $el.datepicker('update', fixing.currentTime)
+        $el.datepicker('update')
         fixing.type = 'update'
-        Event.create('fixing').trigger('AdminGetInstructionsList', map, item, fixing)
+        Event.create('fixing').trigger('AdminGetInstructions', map, item, fixing)
       })
     }
   }
 })($('.instructions-datepicker'))
+
+// 
+var SendInstruction = (function ($el) {
+  Event.create('fixing').listen('instructionsDialog', function (map, item, fixing) {
+    SendInstruction.refresh(map, item, fixing)
+  })
+
+  return {
+    refresh(map, item, fixing) {
+      $el.off('click').on('click', function (e) {
+        let userInfo = utils.GetLoaclStorageUserInfo('userinfo')
+        let instruction = $('#InstructionsTextarea').val()
+        // let InstructionsRadio = $('input:radio:checked').val()
+        // let instruction = InstructionsTextarea ? InstructionsTextarea : InstructionsRadio
+        FIXING_API.SendInstruction({ adminId: userInfo.AdminId, fixingId: item.entity_name, instruction }).then(res => {
+          if (res.data.ret === 1001 ) {
+            $('#no-data-ModalCenter').find('.no-data-container').text(res.data.code)
+            $('#no-data-ModalCenter').modal('show')
+            Event.create('fixing').trigger('AdminGetInstructions', map, fixing)
+          }
+          if (res.data.ret === 1002) {
+            $('#no-data-ModalCenter').find('.no-data-container').text(res.data.code)
+            $('#no-data-ModalCenter').modal('show')
+          }
+        })
+      })
+    }
+  }
+})($('#SendInstruction-button'))
+
+var AdminGetInstructionsListChecks = (function ($el) {
+  Event.create('fixing').listen('instructionsDialog', function (map, item, fixing) {
+    AdminGetInstructionsListChecks.refresh(map, item, fixing)
+  })
+
+  return {
+    refresh(map, item, fixing) {
+      $el.off('click').on('click', 'input.form-check-input', function (e) {
+        $('#InstructionsTextarea').val($(this).val())
+      })
+    }
+  }
+})($('#AdminGetInstructionsList'))
 
 
