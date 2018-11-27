@@ -505,6 +505,7 @@ var AdminGetInstructionsListChecks = (function ($el) {
 
   return {
     refresh(map, item, fixing) {
+      $('#InstructionsTextarea').val('')
       $el.off('click').on('click', 'input.form-check-input', function (e) {
         $('#InstructionsTextarea').val($(this).val())
       })
