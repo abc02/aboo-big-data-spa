@@ -245,7 +245,7 @@ var fixingLists = (function ($el) {
                 <td class="pt-4 pb-4">${utils.handleTimestampToDateTime(item.latest_location.loc_time)}</td>
                 <td class="pt-4 pb-4">${item.entity_desc}</td>
                 <td class="pt-4 pb-4">
-                <button type="button" class="btn btn-primary border-radius-small" onclick="Event.create('fixing').trigger('instructionsDialog', null, { entity_name: ${item.entity_name}}, { type: 'init', currentTime: utils.handleTimestampToDate(new Date()) })">
+                <button type="button" class="btn btn-primary border-radius-small" onclick="Event.create('fixing').trigger('instructionsDialog', null, { entity_name: ${item.entity_name}}, { fixingId: ${item.entity_name}, type: 'init', currentTime: utils.handleTimestampToDate(new Date()) })">
                   <img src="/assets/contro_instruction.png" width="13" height="20" />
                   指令
                 </button></td>
@@ -386,7 +386,7 @@ var AdminGetInstructions = (function($el) {
       // loacl 获取数据
       $el.find('.instructions-datepicker').datepicker('update', fixing.currentTime)
       let userInfo = utils.GetLoaclStorageUserInfo('userinfo')
-      FIXING_API.AdminGetInstructions({ adminId: userInfo.AdminId, fixingId: item.entity_name, time: fixing.currentTime }).then(res => {
+      FIXING_API.AdminGetInstructions({ adminId: userInfo.AdminId, fixingId: fixing.fixingId, time: fixing.currentTime }).then(res => {
         if (res.data.ret === 1001) {
           // 1 设备 2 平台
           let instructionsContent = res.data.data.reverse().map(item => {
@@ -482,11 +482,11 @@ var SendInstruction = (function ($el) {
         let instruction = $('#InstructionsTextarea').val()
         // let InstructionsRadio = $('input:radio:checked').val()
         // let instruction = InstructionsTextarea ? InstructionsTextarea : InstructionsRadio
-        FIXING_API.SendInstruction({ adminId: userInfo.AdminId, fixingId: item.entity_name, instruction }).then(res => {
+        FIXING_API.SendInstruction({ adminId: userInfo.AdminId, fixingId: fixing.fixingId, instruction }).then(res => {
           if (res.data.ret === 1001 ) {
             $('#no-data-ModalCenter').find('.no-data-container').text(res.data.code)
             $('#no-data-ModalCenter').modal('show')
-            Event.create('fixing').trigger('AdminGetInstructions', map, fixing)
+            Event.create('fixing').trigger('AdminGetInstructions', map, item, fixing)
           }
           if (res.data.ret === 1002) {
             $('#no-data-ModalCenter').find('.no-data-container').text(res.data.code)
@@ -512,4 +512,17 @@ var AdminGetInstructionsListChecks = (function ($el) {
   }
 })($('#AdminGetInstructionsList'))
 
+var restartButton = (function ($el) {
+  Event.create('fixing').listen('instructionsDialog', function (map, item, fixing) {
+    restartButton.refresh(map, item, fixing)
+  })
+
+  return {
+    refresh(map, item, fixing) {
+      $el.off('click').on('click', function (e) {
+        Event.create('fixing').trigger('AdminGetInstructions', map, item, fixing)
+      })
+    }
+  }
+})($('.restart-button'))
 
